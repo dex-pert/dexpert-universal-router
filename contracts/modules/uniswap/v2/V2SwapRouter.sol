@@ -80,12 +80,10 @@ abstract contract V2SwapRouter is UniswapImmutables, Permit2Payments {
         ) {
             payOrPermit2Transfer(path[0], payer, firstPair, amountIn, level, swapType);
         }
-
         ERC20 tokenOut = ERC20(path[path.length - 1]);
         uint256 balanceBefore = tokenOut.balanceOf(recipient);
 
         _v2Swap(path, recipient, firstPair);
-
         uint256 amountOut = tokenOut.balanceOf(recipient) - balanceBefore;
         if (amountOut < amountOutMinimum) revert V2TooLittleReceived();
     }

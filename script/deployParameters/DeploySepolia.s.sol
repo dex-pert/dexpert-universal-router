@@ -7,6 +7,7 @@ import {RouterParameters} from 'contracts/base/RouterImmutables.sol';
 contract DeploySepolia is DeployUniversalRouter {
     function setUp() public override {
         params = RouterParameters({
+            uniswapV2Router02: 0xb22cE52905d25987321d6BF73d1705886f1Cc4F4,
             feeRecipient: 0x464c7Bb0d5DA8189fD140f153535932d291F7f97,
             feeBaseBps: 1000,
             permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,

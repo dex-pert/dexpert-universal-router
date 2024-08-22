@@ -134,7 +134,7 @@ abstract contract V3SwapRouter is UniswapImmutables, Permit2Payments, IUniswapV3
     ) internal {
         maxAmountInCached = amountInMaximum;
         (address tokenIn, uint24 fee, address tokenOut) = path.decodeFirstPool();
-        uint256 amountToPay = payOrPermit2TransferFee(tokenOut, payer, msg.sender, uint256(amountInMaximum), level, swapType);
+        payOrPermit2TransferFee(tokenOut, payer, msg.sender, uint256(amountInMaximum), level, swapType);
         // note that because exact output swaps are executed in reverse order, tokenOut is actually tokenIn
         (int256 amount0Delta, int256 amount1Delta, bool zeroForOne) = _swap(
             -amountOut.toInt256(),

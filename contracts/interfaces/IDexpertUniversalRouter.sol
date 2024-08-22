@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 
-interface IDexpertRouter{
+interface IDexpertUniversalRouter{
     /// @notice Thrown when a required command has failed
     error ExecutionFailed(uint256 commandIndex, bytes message);
 

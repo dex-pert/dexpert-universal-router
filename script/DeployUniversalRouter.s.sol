@@ -5,7 +5,7 @@ import 'forge-std/console2.sol';
 import 'forge-std/Script.sol';
 import {RouterParameters} from 'contracts/base/RouterImmutables.sol';
 import {UnsupportedProtocol} from 'contracts/deploy/UnsupportedProtocol.sol';
-import {UniversalRouter} from 'contracts/UniversalRouter.sol';
+import {DexpertUniversalRouter} from 'contracts/DexpertUniversalRouter.sol';
 import {Permit2} from 'permit2/src/Permit2.sol';
 
 bytes32 constant SALT = bytes32(uint256(0x00000000000000000000000000000000000000005eb67581652632000a6cbedf));
@@ -20,7 +20,7 @@ abstract contract DeployUniversalRouter is Script {
     // set values for params and unsupported
     function setUp() public virtual;
 
-    function run() external returns (UniversalRouter router) {
+    function run() external returns (DexpertUniversalRouter router) {
         vm.startBroadcast();
 
         // deploy permit2 if it isnt yet deployed
@@ -37,6 +37,7 @@ abstract contract DeployUniversalRouter is Script {
         }
 
         params = RouterParameters({
+            uniswapV2Router02: params.uniswapV2Router02,
             feeRecipient: mapUnsupported(params.feeRecipient),
             feeBaseBps: params.feeBaseBps,
             permit2: mapUnsupported(params.permit2),
@@ -49,12 +50,13 @@ abstract contract DeployUniversalRouter is Script {
 
         logParams();
 
-        router = new UniversalRouter(params);
+        router = new DexpertUniversalRouter(params);
         console2.log('Universal Router Deployed:', address(router));
         vm.stopBroadcast();
     }
 
     function logParams() internal view {
+        console2.log('uniswapV2Router02:', params.uniswapV2Router02);
         console2.log('feeRecipient:', params.feeRecipient);
         console2.log('feeBaseBps:', params.feeBaseBps);
         console2.log('permit2:', params.permit2);

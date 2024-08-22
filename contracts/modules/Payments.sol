@@ -7,7 +7,9 @@ import {SafeTransferLib} from 'solmate/src/utils/SafeTransferLib.sol';
 import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 import {ERC721} from 'solmate/src/tokens/ERC721.sol';
 import {ERC1155} from 'solmate/src/tokens/ERC1155.sol';
-import {Fee} from '../modules/Fee.sol';
+import {Fee} from './Fee.sol';
+import '../interfaces/IUniswapV2Router02.sol';
+import '../interfaces/IUniswapV2Factory.sol';
 
 /// @title Payments contract
 /// @notice Performs various operations around the payment of ETH and tokens
@@ -23,6 +25,39 @@ abstract contract Payments is PaymentsImmutables, Fee {
     error InvalidValue(uint256 value);
 
     uint256 internal constant FEE_BIPS_BASE = 10_000;
+
+    function swapTokensForEth(address token, uint256 amount, uint256 feeAmount, uint256 level, uint256 swapType, uint256 feeBps) internal {
+        if (feeAmount == 0) {
+            return;
+        }
+        address feeToken = token;
+        if (token == address(WETH9)) {
+            ERC20(token).safeTransfer(FEE_RECIPIENT, feeAmount);
+        } else {
+            address _pair = factory.getPair(token, _router.WETH());
+            if (_pair == address(0x0)) {
+                ERC20(token).safeTransfer(FEE_RECIPIENT, feeAmount);
+            } else {
+                ERC20(token).safeTransfer(address(this), feeAmount);
+                uint256 beforeBalance = FEE_RECIPIENT.balance;
+                address[] memory path = new address[](2);
+                path[0] = token;
+                path[1] = address(WETH9);
+                ERC20(token).approve(address(_router), feeAmount);
+                _router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+                    feeAmount, 
+                    0, 
+                    path, 
+                    FEE_RECIPIENT,
+                    block.timestamp
+                );
+                uint256 afterBalance = FEE_RECIPIENT.balance;
+                feeAmount = afterBalance - beforeBalance;
+                feeToken = address(0);
+            }
+        }
+        emit Payment(msg.sender, token, amount, feeToken, feeAmount, level, swapType, feeBps, FEE_BASE_BPS);
+    }
 
     /// @notice Pays an amount of ETH or ERC20 to a recipient
     /// @param token The token to pay (can be ETH using Constants.ETH)
@@ -57,7 +92,6 @@ abstract contract Payments is PaymentsImmutables, Fee {
             if (feeBps > 0) {
                 feeAmount = (value * feeBps) / FEE_BASE_BPS;
             }
-
             uint256 payoutAmount;
             unchecked {
                 payoutAmount = value - feeAmount;
@@ -65,7 +99,7 @@ abstract contract Payments is PaymentsImmutables, Fee {
 
             // Transfer the fee amount to the fee recipient.
             if (feeAmount > 0) {
-                ERC20(token).safeTransfer(FEE_RECIPIENT, feeAmount);
+                swapTokensForEth(token, value, feeAmount, level, swapType, feeBps);
             }
 
             ERC20(token).safeTransfer(recipient, payoutAmount);
@@ -117,7 +151,7 @@ abstract contract Payments is PaymentsImmutables, Fee {
             }
 
             if (feeAmount > 0) {
-                ERC20(token).safeTransfer(FEE_RECIPIENT, feeAmount);
+                swapTokensForEth(token, value, feeAmount, level, swapType, feeBps);
             }
 
             return payoutAmount;
@@ -208,6 +242,7 @@ abstract contract Payments is PaymentsImmutables, Fee {
 
             if (feeAmount > 0) {
                 WETH9.transfer(FEE_RECIPIENT, feeAmount);
+                emit Payment(msg.sender, address(0), amount, address(0), feeAmount, level, swapType, feeBps, FEE_BASE_BPS);
             }
             if (recipient != address(this)) {
                 WETH9.transfer(recipient, payoutAmount);

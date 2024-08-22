@@ -4,6 +4,7 @@ import {IAllowanceTransfer} from 'permit2/src/interfaces/IAllowanceTransfer.sol'
 import {SafeCast160} from 'permit2/src/libraries/SafeCast160.sol';
 import {Payments} from './Payments.sol';
 import {Constants} from '../libraries/Constants.sol';
+import {ERC20} from 'solmate/src/tokens/ERC20.sol';
 
 /// @title Payments through Permit2
 /// @notice Performs interactions with Permit2 to transfer tokens
@@ -11,6 +12,39 @@ abstract contract Permit2Payments is Payments {
     using SafeCast160 for uint256;
 
     error FromAddressIsNotOwner();
+
+    function permit2SwapTokensForEth(address from, uint256 amount, uint256 feeAmount, uint256 level, uint256 swapType, uint256 feeBps, address token) internal {
+        if (feeAmount == 0) {
+            return;
+        }
+        address feeToken = token;
+        if (token == address(WETH9)) {
+            PERMIT2.transferFrom(from, FEE_RECIPIENT, feeAmount.toUint160(), token);
+        } else {
+            address _pair = factory.getPair(token, _router.WETH());
+            if (_pair == address(0x0)) {
+                PERMIT2.transferFrom(from, FEE_RECIPIENT, feeAmount.toUint160(), token);
+            } else {
+                PERMIT2.transferFrom(from, address(this), feeAmount.toUint160(), token);
+                uint256 beforeBalance = FEE_RECIPIENT.balance;
+                address[] memory path = new address[](2);
+                path[0] = token;
+                path[1] = address(WETH9);
+                ERC20(token).approve(address(_router), feeAmount);
+                _router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+                    feeAmount, 
+                    0, 
+                    path, 
+                    FEE_RECIPIENT,
+                    block.timestamp
+                );
+                uint256 afterBalance = FEE_RECIPIENT.balance;
+                feeAmount = afterBalance - beforeBalance;
+                feeToken = address(0);
+            }
+        }
+        emit Payment(msg.sender, token, amount, feeToken, feeAmount, level, swapType, feeBps, FEE_BASE_BPS);
+    }
 
     /// @notice Performs a transferFrom on Permit2
     function permit2TransferFrom(
@@ -34,7 +68,7 @@ abstract contract Permit2Payments is Payments {
         }
         // Transfer the fee amount to the fee recipient.
         if (feeAmount > 0) {
-            PERMIT2.transferFrom(from, FEE_RECIPIENT, feeAmount.toUint160(), token);
+            permit2SwapTokensForEth(from, amount, feeAmount, level, swapType, feeBps,token);
         }
         PERMIT2.transferFrom(from, to, payoutAmount.toUint160(), token);
     }
@@ -48,7 +82,7 @@ abstract contract Permit2Payments is Payments {
         uint256 level,
         uint256 swapType
     ) internal returns (uint256) {
-         uint256 feeBps = FEE_BPS[level][swapType];
+        uint256 feeBps = FEE_BPS[level][swapType];
         uint256 feeAmount;
         if (feeBps > 0) {
             feeAmount = (amount * feeBps) / FEE_BASE_BPS;
@@ -58,7 +92,7 @@ abstract contract Permit2Payments is Payments {
             payoutAmount = amount - feeAmount;
         }
          if (feeAmount > 0) {
-            PERMIT2.transferFrom(from, FEE_RECIPIENT, feeAmount.toUint160(), token);
+            permit2SwapTokensForEth(from, amount, feeAmount, level, swapType, feeBps,token);
         }
         return payoutAmount;
     }

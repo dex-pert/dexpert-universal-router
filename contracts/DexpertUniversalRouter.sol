@@ -7,11 +7,11 @@ import {RouterParameters} from './base/RouterImmutables.sol';
 import {PaymentsImmutables, PaymentsParameters} from './modules/PaymentsImmutables.sol';
 import {UniswapImmutables, UniswapParameters} from './modules/uniswap/UniswapImmutables.sol';
 import {Commands} from './libraries/Commands.sol';
-import {IDexpertRouter} from './interfaces/IDexpertRouter.sol';
+import {IDexpertUniversalRouter} from './interfaces/IDexpertUniversalRouter.sol';
 import {Ownable} from 'permit2/lib/openzeppelin-contracts/contracts/access/Ownable.sol';
 import {Fee, FeeParameters} from './modules/Fee.sol';
 
-contract DexpertRouter is IDexpertRouter, Dispatcher, Ownable {
+contract DexpertUniversalRouter is IDexpertUniversalRouter, Dispatcher, Ownable {
 
     event FeeRecipientUpdated(address indexed msgSender, address feeRecipient);
     event FeeBpsUpdated(address indexed msgSender, uint256 level, uint256 swapType, uint256 feeBps);
@@ -20,7 +20,6 @@ contract DexpertRouter is IDexpertRouter, Dispatcher, Ownable {
     error InvalidFeeBps(uint256 feeBps);
     error InvalidFeeBaseBps(uint256 feeBaseBps);
     error FeeRecipientAddressCannotBeZeroAddress();
-    error FeeRecipientAddressCannotBeZeroAddress1();
 
     modifier checkDeadline(uint256 deadline) {
         if (block.timestamp > deadline) revert TransactionDeadlinePassed();
@@ -32,10 +31,10 @@ contract DexpertRouter is IDexpertRouter, Dispatcher, Ownable {
             UniswapParameters(params.v2Factory, params.v3Factory, params.pairInitCodeHash, params.poolInitCodeHash)
         )
         PaymentsImmutables(PaymentsParameters(params.permit2, params.weth9))
-        Fee(FeeParameters(params.feeRecipient, params.feeBaseBps))
+        Fee(FeeParameters(params.feeRecipient, params.feeBaseBps, params.uniswapV2Router02)) 
     {}
 
-    /// @inheritdoc IDexpertRouter
+    /// @inheritdoc IDexpertUniversalRouter
     function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline)
         external
         payable

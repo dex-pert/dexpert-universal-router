@@ -57,7 +57,7 @@ const ABI_DEFINITION: { [key in CommandType]: string[] } = {
   [CommandType.WRAP_ETH]: ['address', 'uint256','bool', 'uint8'],
   [CommandType.UNWRAP_WETH]: ['address', 'uint256'],
   [CommandType.SWEEP]: ['address', 'address', 'uint256'],
-  [CommandType.TRANSFER]: ['address', 'address', 'uint256', 'bool', 'uint8'],
+  [CommandType.TRANSFER]: ['address', 'address', 'uint256', 'uint256', 'uint256'],
   [CommandType.TRANSFER_FROM]: ['address', 'address', 'uint256'],
   [CommandType.BALANCE_CHECK_ERC20]: ['address', 'address', 'uint256'],
 

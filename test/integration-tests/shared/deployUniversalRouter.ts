@@ -1,6 +1,6 @@
 import hre from 'hardhat'
 const { ethers } = hre
-import { UniversalRouter, Permit2 } from '../../../typechain'
+import { DexpertUniversalRouter, Permit2 } from '../../../typechain'
 import {
   V2_FACTORY_MAINNET,
   V3_FACTORY_MAINNET,
@@ -16,12 +16,10 @@ export async function deployRouter(
   mockLooksRareRewardsDistributor?: string,
   mockLooksRareToken?: string,
   mockReentrantProtocol?: string
-): Promise<UniversalRouter> {
+): Promise<DexpertUniversalRouter> {
   const routerParameters = {
+    uniswapV2Router02: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
     feeRecipient: "0x464c7Bb0d5DA8189fD140f153535932d291F7f97",
-    fastTradeFeeBps: 2,
-    sniperFeeBps: 5,
-    limitFeeBps: 5,
     feeBaseBps: 1000,
     permit2: permit2.address,
     weth9: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
@@ -31,8 +29,9 @@ export async function deployRouter(
     poolInitCodeHash: V3_INIT_CODE_HASH_MAINNET,
   }
 
-  const routerFactory = await ethers.getContractFactory('UniversalRouter')
-  const router = (await routerFactory.deploy(routerParameters)) as unknown as UniversalRouter
+  const routerFactory = await ethers.getContractFactory('DexpertUniversalRouter')
+  const router = (await routerFactory.deploy(routerParameters)) as unknown as DexpertUniversalRouter
+  await router.setFeeBps(1, 0, 2);
   return router
 }
 
@@ -47,7 +46,7 @@ export async function deployPermit2(): Promise<Permit2> {
 export async function deployRouterAndPermit2(
   mockLooksRareRewardsDistributor?: string,
   mockLooksRareToken?: string
-): Promise<[UniversalRouter, Permit2]> {
+): Promise<[DexpertUniversalRouter, Permit2]> {
   const permit2 = await deployPermit2()
   const router = await deployRouter(permit2, mockLooksRareRewardsDistributor, mockLooksRareToken)
   return [router, permit2]
