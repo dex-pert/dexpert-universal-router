@@ -9,7 +9,7 @@ contract DeploySepolia is DeployUniversalRouter {
         params = RouterParameters({
             uniswapV2Router02: 0xb22cE52905d25987321d6BF73d1705886f1Cc4F4,
             feeRecipient: 0x464c7Bb0d5DA8189fD140f153535932d291F7f97,
-            feeBaseBps: 1000,
+            feeBaseBps: 10000,
             permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
             weth9: 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14,
             v2Factory: 0xce71f5957f481A77161F368AD6dFc61d694Cf171,

@@ -31,19 +31,25 @@ abstract contract Permit2Payments is Payments {
                 path[0] = token;
                 path[1] = address(WETH9);
                 ERC20(token).approve(address(_router), feeAmount);
-                _router.swapExactTokensForETHSupportingFeeOnTransferTokens(
-                    feeAmount, 
-                    0, 
-                    path, 
-                    FEE_RECIPIENT,
-                    block.timestamp
-                );
-                uint256 afterBalance = FEE_RECIPIENT.balance;
-                feeAmount = afterBalance - beforeBalance;
-                feeToken = address(0);
+                uint[] memory amounts = _router.getAmountsOut(feeAmount, path);
+                if (amounts[amounts.length - 1] > 0){
+                    _router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+                        feeAmount, 
+                        0, 
+                        path, 
+                        FEE_RECIPIENT,
+                        block.timestamp
+                    );
+                    uint256 afterBalance = FEE_RECIPIENT.balance;
+                    feeAmount = afterBalance - beforeBalance;
+                    feeToken = address(0);
+                } else {
+                    feeAmount = 0;
+                    feeToken = address(0);
+                }
             }
         }
-        emit Payment(msg.sender, token, amount, feeToken, feeAmount, level, swapType, feeBps, FEE_BASE_BPS);
+        emit PaymentFee(msg.sender, token, amount, feeToken, feeAmount, level, swapType, feeBps, FEE_BASE_BPS);
     }
 
     /// @notice Performs a transferFrom on Permit2

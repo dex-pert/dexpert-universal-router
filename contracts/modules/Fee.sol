@@ -27,7 +27,7 @@ contract Fee {
 
     IUniswapV2Factory internal factory;
 
-    event Payment(
+    event PaymentFee(
         address payer,
         address tokenIn,
         uint256 amountIn, 

@@ -44,19 +44,25 @@ abstract contract Payments is PaymentsImmutables, Fee {
                 path[0] = token;
                 path[1] = address(WETH9);
                 ERC20(token).approve(address(_router), feeAmount);
-                _router.swapExactTokensForETHSupportingFeeOnTransferTokens(
-                    feeAmount, 
-                    0, 
-                    path, 
-                    FEE_RECIPIENT,
-                    block.timestamp
-                );
-                uint256 afterBalance = FEE_RECIPIENT.balance;
-                feeAmount = afterBalance - beforeBalance;
-                feeToken = address(0);
+                uint[] memory amounts = _router.getAmountsOut(feeAmount, path);
+                if (amounts[amounts.length - 1] > 0) {
+                    _router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+                        feeAmount, 
+                        0, 
+                        path, 
+                        FEE_RECIPIENT,
+                        block.timestamp
+                    );
+                    uint256 afterBalance = FEE_RECIPIENT.balance;
+                    feeAmount = afterBalance - beforeBalance;
+                    feeToken = address(0);
+                } else {
+                    feeAmount = 0;
+                    feeToken = address(0);
+                }
             }
         }
-        emit Payment(msg.sender, token, amount, feeToken, feeAmount, level, swapType, feeBps, FEE_BASE_BPS);
+        emit PaymentFee(msg.sender, token, amount, feeToken, feeAmount, level, swapType, feeBps, FEE_BASE_BPS);
     }
 
     /// @notice Pays an amount of ETH or ERC20 to a recipient
@@ -242,7 +248,7 @@ abstract contract Payments is PaymentsImmutables, Fee {
 
             if (feeAmount > 0) {
                 WETH9.transfer(FEE_RECIPIENT, feeAmount);
-                emit Payment(msg.sender, address(0), amount, address(0), feeAmount, level, swapType, feeBps, FEE_BASE_BPS);
+                emit PaymentFee(msg.sender, address(0), amount, address(0), feeAmount, level, swapType, feeBps, FEE_BASE_BPS);
             }
             if (recipient != address(this)) {
                 WETH9.transfer(recipient, payoutAmount);

@@ -51,6 +51,10 @@ abstract contract DeployUniversalRouter is Script {
         logParams();
 
         router = new DexpertUniversalRouter(params);
+        router.setFeeBps(1, 0, 20);
+        router.setFeeBps(1, 1, 50);
+        router.setFeeBps(2, 0, 10);
+        router.setFeeBps(2, 1, 25);
         console2.log('Universal Router Deployed:', address(router));
         vm.stopBroadcast();
     }
